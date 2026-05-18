@@ -4,6 +4,7 @@ const parseArgs = require('minimist');
 const usage = require('./usage');
 const version = require('../package.json').version;
 const runner = require('../core/runner');
+const logger = require('../core/util/logger');
 
 main();
 
@@ -20,6 +21,9 @@ function main () {
     return count + (arg.match(/v/g) || []).length;
   }, 0);
   process.env.BACKSTOP_VERBOSITY = vCount;
+
+  // Globally override console methods to respect verbosity and apply BackstopJS formatting
+  logger.globalize();
 
   // Catch errors from failing promises
   process.on('unhandledRejection', function (error) {
@@ -41,9 +45,6 @@ function main () {
   if (!commandName) {
     console.log(usage);
   } else {
-    // Globally override console methods to respect verbosity and apply BackstopJS formatting
-    // logger.globalize();
-
     console.log('BackstopJS v' + version);
     runner(commandName, argsOptions).catch(function () {
       process.exitCode = 1;

@@ -113,7 +113,6 @@
     "p-map": "^4.0.0",
     "path": "^0.12.7",
     "playwright": "^1.40.1",
-    "pngjs": "^7.0.0",
     "portfinder": "^1.0.32",
     "puppeteer": "^22.1.0",
     "super-simple-web-server": "^1.1.4",

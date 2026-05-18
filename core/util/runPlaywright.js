@@ -7,7 +7,6 @@ const _ = require('lodash');
 const ensureDirectoryPath = require('./ensureDirectoryPath');
 const injectBackstopTools = require('../../capture/backstopTools.js');
 const engineTools = require('./engineTools');
-const { trimWhitespace, matchHeight } = require('./cropImage');
 const logger = require('./logger')('Playwright');
 
 const TEST_TIMEOUT = 60000;
@@ -384,7 +383,6 @@ async function delegateSelectors (
     }
 
     selectorMap[selector].filePath = filePath;
-    selectorMap[selector].referenceFilePath = testPair.reference;
     if (selector === BODY_SELECTOR || selector === DOCUMENT_SELECTOR) {
       captureDocument = selector;
     } else if (selector === VIEWPORT_SELECTOR) {
@@ -395,14 +393,14 @@ async function delegateSelectors (
   });
 
   if (captureDocument) {
-    captureJobs.push(function () { return captureScreenshot(page, browserContext, captureDocument, selectorMap, config, [], viewport, scenario); });
+    captureJobs.push(function () { return captureScreenshot(page, browserContext, captureDocument, selectorMap, config, [], viewport); });
   }
   // TODO: push captureViewport into captureList (instead of calling captureScreenshot()) to improve perf.
   if (captureViewport) {
-    captureJobs.push(function () { return captureScreenshot(page, browserContext, captureViewport, selectorMap, config, [], viewport, scenario); });
+    captureJobs.push(function () { return captureScreenshot(page, browserContext, captureViewport, selectorMap, config, [], viewport); });
   }
   if (captureList.length) {
-    captureJobs.push(function () { return captureScreenshot(page, browserContext, null, selectorMap, config, captureList, viewport, scenario); });
+    captureJobs.push(function () { return captureScreenshot(page, browserContext, null, selectorMap, config, captureList, viewport); });
   }
 
   return new Promise(function (resolve, reject) {
@@ -435,7 +433,7 @@ async function delegateSelectors (
   }).then(_ => compareConfig);
 }
 
-async function captureScreenshot (page, browserContext, selector, selectorMap, config, selectors, viewport, scenario) {
+async function captureScreenshot (page, browserContext, selector, selectorMap, config, selectors, viewport) {
   let filePath;
   const fullPage = (selector === NOCLIP_SELECTOR || selector === DOCUMENT_SELECTOR);
   if (selector) {
@@ -447,12 +445,6 @@ async function captureScreenshot (page, browserContext, selector, selectorMap, c
         path: filePath,
         fullPage
       });
-
-      if (config.isReference && scenario.trimBottomColor) {
-        await trimWhitespace(filePath, scenario.trimBottomColor, scenario.trimBottomPadding, logger);
-      } else if (!config.isReference && scenario.trimBottomColor) {
-        await matchHeight(filePath, selectorMap[selector].referenceFilePath, logger);
-      }
     } catch (e) {
       logger.log(chalk.red('Error capturing..'), e);
       return fs.copy(config.env.backstop + ERROR_SELECTOR_PATH, filePath);
@@ -479,12 +471,6 @@ async function captureScreenshot (page, browserContext, selector, selectorMap, c
           const params = { captureBeyondViewport: false, path };
 
           await type.screenshot(params);
-
-          if (config.isReference && scenario.trimBottomColor) {
-            await trimWhitespace(path, scenario.trimBottomColor, scenario.trimBottomPadding, logger);
-          } else if (!config.isReference && scenario.trimBottomColor) {
-            await matchHeight(path, selectorMap[s].referenceFilePath, logger);
-          }
         } else {
           logger.log(chalk.yellow(`Element not visible for capturing: ${s}`));
           return fs.copy(config.env.backstop + HIDDEN_SELECTOR_PATH, path);
